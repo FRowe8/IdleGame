@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "paradox-protocol",
+  "version": "0.1.0",
+  "description": "Time Travel Resource Arbitrage Idle Game",
+  "homepage": "https://github.com/YourUsername/IdleGame",
+  "supports": "!uwp & !emscripten",
+  "dependencies": [
+    {
+      "name": "sdl2",
+      "version>=": "2.28.0"
+    },
+    {
+      "name": "nlohmann-json",
+      "version>=": "3.11.0"
+    },
+    {
+      "name": "rmlui",
+      "version>=": "5.1.0",
+      "features": [
+        "freetype",
+        "sdl2-binding"
+      ]
+    },
+    {
+      "name": "gtest",
+      "version>=": "1.14.0"
+    }
+  ],
+  "builtin-baseline": "a42af01b72c28a8e1d7b48107b33e4f286a55ef6"
+}
