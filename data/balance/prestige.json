@@ -1,0 +1,42 @@
+{
+  "prestige": {
+    "currency_name": "Temporal Anchors",
+    "currency_symbol": "⚓",
+    "formula": {
+      "description": "Temporal Anchors = sqrt(total_credits_earned / 1000000)",
+      "base_divisor": "1000000"
+    },
+    "upgrades": [
+      {
+        "id": "anchor_production_1",
+        "name": "Persistent Echo I",
+        "description": "Start each timeline with +10% production",
+        "cost": 1,
+        "effect": {
+          "type": "starting_production_multiplier",
+          "value": "1.1"
+        }
+      },
+      {
+        "id": "anchor_paradox_1",
+        "name": "Causality Mastery I",
+        "description": "Paradox instability cap increased by 20%",
+        "cost": 2,
+        "effect": {
+          "type": "paradox_cap_increase",
+          "value": "0.2"
+        }
+      },
+      {
+        "id": "anchor_timeline_slot",
+        "name": "Quantum Branching",
+        "description": "Unlock an additional timeline slot",
+        "cost": 5,
+        "effect": {
+          "type": "timeline_slot",
+          "value": 1
+        }
+      }
+    ]
+  }
+}

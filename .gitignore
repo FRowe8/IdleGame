@@ -1,0 +1,79 @@
+# ============================================
+# PARADOX PROTOCOL - Git Ignore
+# ============================================
+
+# Build directories
+build/
+build-*/
+builds/
+cmake-build-*/
+
+# IDE directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# FetchContent downloads
+external/
+_deps/
+
+# Compiled binaries
+*.exe
+*.out
+*.app
+*.wasm
+*.html
+*.js
+*.data
+
+# Libraries
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+
+# Object files
+*.o
+*.obj
+
+# Dependency directories (if using vcpkg)
+vcpkg_installed/
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# Windows
+Thumbs.db
+*.pdb
+*.ilk
+
+# Save files (during development)
+saves/
+*.sav
+
+# Logs
+*.log
+
+# Testing artifacts
+Testing/
+test_output/
+
+# Package managers
+packages/
+
+# Emscripten cache
+.emscripten_cache/
+.emscripten_ports/

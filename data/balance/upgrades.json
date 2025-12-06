@@ -1,0 +1,38 @@
+{
+  "upgrades": [
+    {
+      "id": "time_multiplier_1",
+      "name": "Temporal Acceleration I",
+      "description": "Increases Time Accumulator production by 100%",
+      "cost": "50",
+      "effect": {
+        "type": "production_multiplier",
+        "target": "time_accumulator",
+        "value": "2.0"
+      },
+      "unlock_condition": "time_accumulator_count >= 1"
+    },
+    {
+      "id": "paradox_dampener_1",
+      "name": "Paradox Dampener I",
+      "description": "Reduces paradox instability gain by 20%",
+      "cost": "200",
+      "effect": {
+        "type": "paradox_reduction",
+        "value": "0.2"
+      },
+      "unlock_condition": "total_loops_created >= 1"
+    },
+    {
+      "id": "interest_boost_1",
+      "name": "Interest Booster I",
+      "description": "Increases Time Bank interest rate by 0.5%",
+      "cost": "1000",
+      "effect": {
+        "type": "interest_rate_increase",
+        "value": "0.005"
+      },
+      "unlock_condition": "time_bank_balance >= 500"
+    }
+  ]
+}

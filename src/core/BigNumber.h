@@ -1,0 +1,87 @@
+#pragma once
+
+#include <mp++/integer.hpp>
+#include <mp++/rational.hpp>
+#include <string>
+#include <compare>
+
+namespace paradox::core {
+
+/**
+ * @brief Arbitrary precision number wrapper for idle game scaling
+ *
+ * Idle games need to handle absurdly large numbers (e.g., 10^308+).
+ * This wraps mp++ (multiprecision library) with game-friendly semantics.
+ *
+ * Design Constraints:
+ * - MUST be serializable to JSON as string (see BigNumberConverter)
+ * - MUST support all arithmetic operators (+, -, *, /, %)
+ * - MUST provide human-readable formatting (1.23e45 → "1.23 Quattuordecillion")
+ */
+class BigNumber {
+public:
+    // ========================================================================
+    // CONSTRUCTORS
+    // ========================================================================
+    BigNumber();
+    explicit BigNumber(int64_t value);
+    explicit BigNumber(const std::string& str_value);  // For JSON deserialization
+    explicit BigNumber(const mppp::integer<1>& value);
+
+    // ========================================================================
+    // ARITHMETIC OPERATORS
+    // ========================================================================
+    BigNumber operator+(const BigNumber& other) const;
+    BigNumber operator-(const BigNumber& other) const;
+    BigNumber operator*(const BigNumber& other) const;
+    BigNumber operator/(const BigNumber& other) const;
+    BigNumber operator%(const BigNumber& other) const;
+
+    BigNumber& operator+=(const BigNumber& other);
+    BigNumber& operator-=(const BigNumber& other);
+    BigNumber& operator*=(const BigNumber& other);
+    BigNumber& operator/=(const BigNumber& other);
+
+    // ========================================================================
+    // COMPARISON OPERATORS (C++20 spaceship)
+    // ========================================================================
+    auto operator<=>(const BigNumber& other) const = default;
+
+    // ========================================================================
+    // CONVERSIONS
+    // ========================================================================
+    [[nodiscard]] std::string ToString() const;              // Base-10 string
+    [[nodiscard]] std::string ToScientific() const;          // "1.23e45"
+    [[nodiscard]] std::string ToHumanReadable() const;       // "1.23 Quattuordecillion"
+
+    [[nodiscard]] double ToDouble() const;                   // Lossy conversion (for display only)
+    [[nodiscard]] int64_t ToInt64() const;                   // Throws if out of range
+
+    // ========================================================================
+    // UTILITY
+    // ========================================================================
+    [[nodiscard]] bool IsZero() const;
+    [[nodiscard]] bool IsNegative() const;
+    [[nodiscard]] BigNumber Abs() const;
+    [[nodiscard]] BigNumber Pow(int exponent) const;
+
+    // ========================================================================
+    // SERIALIZATION SUPPORT
+    // ========================================================================
+    // Used by BigNumberConverter for JSON serialization
+    [[nodiscard]] const mppp::integer<1>& GetRawValue() const { return value_; }
+
+private:
+    mppp::integer<1> value_;  // Dynamic-size integer (GMP backend)
+
+    // Suffix table for human-readable formatting
+    static const char* GetSuffixForExponent(int exponent);
+};
+
+// ============================================================================
+// MATH HELPERS (Outside class for cleaner API)
+// ============================================================================
+BigNumber Max(const BigNumber& a, const BigNumber& b);
+BigNumber Min(const BigNumber& a, const BigNumber& b);
+
+} // namespace paradox::core

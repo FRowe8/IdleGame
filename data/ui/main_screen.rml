@@ -1,0 +1,73 @@
+<!DOCTYPE rml>
+<rml>
+<head>
+    <title>Paradox Protocol</title>
+    <link type="text/rcss" href="styles/main.rcss"/>
+</head>
+<body>
+    <div id="main_container">
+        <!-- Header -->
+        <div id="header">
+            <h1>⏱️ PARADOX PROTOCOL</h1>
+            <p class="subtitle">Time Travel Resource Arbitrage</p>
+        </div>
+
+        <!-- Resource Display -->
+        <div id="resources">
+            <div class="resource_item">
+                <span class="resource_label">Credits:</span>
+                <span class="resource_value" data-bind="credits">0</span>
+            </div>
+            <div class="resource_item">
+                <span class="resource_label">Credits/sec:</span>
+                <span class="resource_value" data-bind="credits_per_second">0</span>
+            </div>
+            <div class="resource_item">
+                <span class="resource_label">Time Bank:</span>
+                <span class="resource_value" data-bind="time_bank_balance">0</span>
+            </div>
+        </div>
+
+        <!-- Paradox Meter -->
+        <div id="paradox_meter">
+            <p>⚠️ Paradox Instability</p>
+            <div class="progress_bar">
+                <div class="progress_fill" data-bind-width="paradox_percentage"></div>
+            </div>
+            <span data-bind="paradox_value">0%</span>
+        </div>
+
+        <!-- Visual Timeline (Placeholder for custom element) -->
+        <div id="timeline_canvas">
+            <!-- TODO: Custom RmlUi element or canvas rendering -->
+            <p style="text-align: center; color: #666;">
+                [ Visual Timeline - To Be Implemented ]
+            </p>
+        </div>
+
+        <!-- Actions -->
+        <div id="actions">
+            <button class="action_button" onclick="send_credits_back">
+                ⏪ Send Credits to Past
+            </button>
+            <button class="action_button" onclick="deposit_time_bank">
+                🏦 Deposit to Time Bank
+            </button>
+            <button class="action_button prestige" onclick="collapse_timeline">
+                💥 Collapse Timeline (Prestige)
+            </button>
+        </div>
+
+        <!-- Generators -->
+        <div id="generators">
+            <h2>Generators</h2>
+            <!-- TODO: Populate from data/balance/generators.json -->
+            <div class="generator_item">
+                <span class="generator_name">Time Accumulator</span>
+                <span class="generator_count">0</span>
+                <button class="buy_button">Buy (10 credits)</button>
+            </div>
+        </div>
+    </div>
+</body>
+</rml>
