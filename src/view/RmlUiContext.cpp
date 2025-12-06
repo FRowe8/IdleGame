@@ -1,16 +1,26 @@
 #include "view/RmlUiContext.h"
+#include "RmlUi_Platform_SDL.h"
+#include "RmlUi_Renderer_GL2.h"
 #include <RmlUi/Core.h>
 
 namespace paradox::view {
 
 bool RmlUiContext::Initialize() {
-    Rml::SetRenderInterface(nullptr);  // TODO: Implement SDL2 render interface
-    Rml::SetSystemInterface(nullptr);  // TODO: Implement SDL2 system interface
+    // NOTE: Backends are initialized globally via RmlSDL::Initialize() and RmlGL2::Initialize()
+    // This is called from main.cpp before this function
 
     Rml::Initialise();
 
     context_ = Rml::CreateContext("main", Rml::Vector2i(1280, 720));
-    return context_ != nullptr;
+    if (!context_) {
+        return false;
+    }
+
+    // TODO: Load default fonts (currently commented out - fonts not included)
+    // Rml::LoadFontFace("data/fonts/LatoLatin-Regular.ttf", true, Rml::Style::FontWeight::Normal);
+    // Rml::LoadFontFace("data/fonts/LatoLatin-Bold.ttf", true, Rml::Style::FontWeight::Bold);
+
+    return true;
 }
 
 void RmlUiContext::Shutdown() {
@@ -19,6 +29,9 @@ void RmlUiContext::Shutdown() {
         context_ = nullptr;
     }
     Rml::Shutdown();
+
+    // NOTE: Backends are shut down globally via RmlSDL::Shutdown() and RmlGL2::Shutdown()
+    // This is called from main.cpp after this function
 }
 
 void RmlUiContext::Update() {
@@ -30,6 +43,24 @@ void RmlUiContext::Update() {
 void RmlUiContext::Render() {
     if (context_) {
         context_->Render();
+    }
+}
+
+Rml::ElementDocument* RmlUiContext::LoadDocument(const std::string& rml_path) {
+    if (!context_) {
+        return nullptr;
+    }
+
+    Rml::ElementDocument* document = context_->LoadDocument(rml_path.c_str());
+    if (document) {
+        document->Show();
+    }
+    return document;
+}
+
+void RmlUiContext::SetDimensions(int width, int height) {
+    if (context_) {
+        context_->SetDimensions(Rml::Vector2i(width, height));
     }
 }
 

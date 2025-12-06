@@ -8,7 +8,14 @@ bool Window::Initialize(const Config& config) {
         return false;
     }
 
-    Uint32 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+    // Set OpenGL attributes for RmlUi
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+
+    Uint32 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
     if (config.fullscreen) {
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
@@ -27,20 +34,24 @@ bool Window::Initialize(const Config& config) {
         return false;
     }
 
-    renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if (!renderer_) {
+    // Create OpenGL context instead of SDL renderer
+    gl_context_ = SDL_GL_CreateContext(window_);
+    if (!gl_context_) {
         SDL_DestroyWindow(window_);
         SDL_Quit();
         return false;
     }
 
+    // Enable vsync
+    SDL_GL_SetSwapInterval(1);
+
     return true;
 }
 
 void Window::Shutdown() {
-    if (renderer_) {
-        SDL_DestroyRenderer(renderer_);
-        renderer_ = nullptr;
+    if (gl_context_) {
+        SDL_GL_DeleteContext(gl_context_);
+        gl_context_ = nullptr;
     }
     if (window_) {
         SDL_DestroyWindow(window_);
@@ -50,12 +61,16 @@ void Window::Shutdown() {
 }
 
 void Window::Clear() {
-    SDL_SetRenderDrawColor(renderer_, 30, 30, 40, 255);  // Dark blue-gray
-    SDL_RenderClear(renderer_);
+    glClearColor(0.12f, 0.12f, 0.16f, 1.0f);  // Dark blue-gray
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Window::Present() {
-    SDL_RenderPresent(renderer_);
+    SDL_GL_SwapWindow(window_);
+}
+
+void Window::GetSize(int& width, int& height) const {
+    SDL_GetWindowSize(window_, &width, &height);
 }
 
 } // namespace paradox::platform

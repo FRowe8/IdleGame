@@ -1,7 +1,7 @@
 #pragma once
 
 #include <RmlUi/Core.h>
-#include <memory>
+#include <string>
 
 namespace paradox::view {
 
@@ -15,6 +15,12 @@ public:
 
     void Update();
     void Render();
+
+    // Load an RmlUi document from file
+    Rml::ElementDocument* LoadDocument(const std::string& rml_path);
+
+    // Set viewport dimensions
+    void SetDimensions(int width, int height);
 
     [[nodiscard]] Rml::Context* GetContext() const { return context_; }
 

@@ -7,11 +7,15 @@
 
 #include "platform/Window.h"
 #include "platform/Input.h"
+#include "platform/rmlui_backend/RmlUi_Platform_SDL.h"
+#include "platform/rmlui_backend/RmlUi_Renderer_GL2.h"
 #include "view/RmlUiContext.h"
+#include "view/DataModelBinder.h"
 #include "core/TickSystem.h"
 #include "core/GameState.h"
 #include "core/BigNumber.h"
 #include "bridge/UpdateThrottle.h"
+#include "bridge/DataBindingRegistry.h"
 
 #include <iostream>
 #include <chrono>
@@ -23,23 +27,28 @@
 using namespace paradox;
 
 // ============================================================================
-// GLOBAL GAME OBJECTS (for simplicity in Hello World)
+// GLOBAL GAME OBJECTS
 // ============================================================================
 struct GameContext {
     platform::Window window;
     platform::Input input;
     view::RmlUiContext rmlui;
+    view::DataModelBinder data_binder;
 
     core::GameState game_state;
     core::TickSystem tick_system{60};  // 60 Hz tick rate
 
     bridge::UpdateThrottle ui_throttle{0.15f};  // Update UI every 150ms
+    bridge::DataBindingRegistry binding_registry;
 
     bool should_quit = false;
     std::chrono::high_resolution_clock::time_point last_frame_time;
 };
 
 static GameContext* g_game_context = nullptr;
+
+// Forward declaration
+extern RenderInterface_GL2* g_render_interface_gl2;
 
 // ============================================================================
 // INITIALIZATION
@@ -52,41 +61,84 @@ bool Initialize() {
     g_game_context = new GameContext();
 
     // ========================================================================
-    // LAYER 4: Platform (SDL2 Window)
+    // LAYER 4: Platform (SDL2 Window + OpenGL)
     // ========================================================================
-    std::cout << "[Platform] Initializing SDL2 window...\n";
+    std::cout << "[Platform] Initializing SDL2 + OpenGL...\n";
     platform::Window::Config window_config;
-    window_config.title = "Paradox Protocol - Pre-Alpha";
+    window_config.title = "Paradox Protocol - First Playable";
     window_config.width = 1280;
     window_config.height = 720;
 
     if (!g_game_context->window.Initialize(window_config)) {
-        std::cerr << "❌ Failed to initialize SDL2 window\n";
+        std::cerr << "❌ Failed to initialize window\n";
         return false;
     }
-    std::cout << "✅ SDL2 window created (1280x720)\n";
+    std::cout << "✅ SDL2 window + OpenGL context created\n";
 
     // ========================================================================
-    // LAYER 3: View (RmlUi)
+    // RmlUi Backends
+    // ========================================================================
+    std::cout << "[RmlUi] Initializing backends...\n";
+
+    // Initialize SDL platform backend
+    if (!RmlSDL::Initialize(g_game_context->window.GetSDLWindow())) {
+        std::cerr << "❌ Failed to initialize RmlUi SDL backend\n";
+        return false;
+    }
+
+    // Initialize OpenGL2 renderer
+    if (!RmlGL2::Initialize()) {
+        std::cerr << "❌ Failed to initialize RmlUi GL2 renderer\n";
+        return false;
+    }
+
+    // Set viewport for renderer
+    int width, height;
+    g_game_context->window.GetSize(width, height);
+    if (g_render_interface_gl2) {
+        g_render_interface_gl2->SetViewport(width, height);
+    }
+
+    std::cout << "✅ RmlUi backends initialized\n";
+
+    // ========================================================================
+    // LAYER 3: View (RmlUi Context)
     // ========================================================================
     std::cout << "[View] Initializing RmlUi context...\n";
     if (!g_game_context->rmlui.Initialize()) {
-        std::cerr << "❌ Failed to initialize RmlUi\n";
-        return false;
+        std::cerr << "⚠️  RmlUi initialized but fonts may be missing\n";
+        // Continue anyway - fonts are optional for basic testing
+    } else {
+        std::cout << "✅ RmlUi context created\n";
     }
-    std::cout << "✅ RmlUi initialized\n";
+
+    // Load main UI document
+    std::cout << "[View] Loading main UI document...\n";
+    Rml::ElementDocument* doc = g_game_context->rmlui.LoadDocument("data/ui/main_screen.rml");
+    if (!doc) {
+        std::cerr << "⚠️  Failed to load main_screen.rml (continuing with empty UI)\n";
+    } else {
+        std::cout << "✅ UI document loaded\n";
+    }
 
     // ========================================================================
-    // LAYER 2: Bridge (Event System)
+    // LAYER 2: Bridge (Event System & Data Binding)
     // ========================================================================
-    std::cout << "[Bridge] Setting up UI throttle...\n";
+    std::cout << "[Bridge] Setting up data binding...\n";
+
+    // Initialize data model binder
+    g_game_context->data_binder.Initialize(
+        g_game_context->rmlui.GetContext(),
+        &g_game_context->game_state,
+        &g_game_context->binding_registry
+    );
+
+    // Set up UI throttle to update data bindings
     g_game_context->ui_throttle.SetCallback([]() {
-        // This callback fires every 150ms to update UI strings
-        // For now, just log to console
-        auto credits = g_game_context->game_state.GetResource("credits");
-        std::cout << "💰 Credits: " << credits.ToString() << "\n";
+        g_game_context->data_binder.UpdateBindings();
     });
-    std::cout << "✅ UI throttle configured (150ms interval)\n";
+
+    std::cout << "✅ Data binding configured\n";
 
     // ========================================================================
     // LAYER 1: Core (Game State)
@@ -104,6 +156,11 @@ bool Initialize() {
     });
 
     std::cout << "✅ Game state initialized\n";
+
+    // ========================================================================
+    // INPUT FORWARDING
+    // ========================================================================
+    g_game_context->input.SetRmlUiContext(g_game_context->rmlui.GetContext());
 
     // ========================================================================
     // READY
@@ -154,9 +211,15 @@ void MainLoopIteration() {
     // ========================================================================
     g_game_context->window.Clear();
 
-    // RmlUi render (currently just empty context)
+    // RmlUi render
+    if (g_render_interface_gl2) {
+        g_render_interface_gl2->BeginFrame();
+    }
     g_game_context->rmlui.Update();
     g_game_context->rmlui.Render();
+    if (g_render_interface_gl2) {
+        g_render_interface_gl2->EndFrame();
+    }
 
     g_game_context->window.Present();
 }
@@ -172,6 +235,10 @@ void Shutdown() {
     std::cout << "==============================================\n";
 
     g_game_context->rmlui.Shutdown();
+
+    RmlGL2::Shutdown();
+    RmlSDL::Shutdown();
+
     g_game_context->window.Shutdown();
 
     delete g_game_context;
@@ -196,6 +263,7 @@ int main(int argc, char* argv[]) {
     #else
     // Desktop: Traditional game loop
     std::cout << "🖥️  Running in Desktop mode\n";
+    std::cout << "Press ESC or close window to exit\n\n";
     while (!g_game_context->should_quit) {
         MainLoopIteration();
     }
