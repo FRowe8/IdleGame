@@ -1,5 +1,6 @@
 #include "core/BigNumber.h"
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 namespace paradox::core {
@@ -65,6 +66,33 @@ BigNumber& BigNumber::operator/=(const BigNumber& other) {
 }
 
 // ============================================================================
+// COMPARISON OPERATORS
+// ============================================================================
+bool BigNumber::operator==(const BigNumber& other) const {
+    return value_ == other.value_;
+}
+
+bool BigNumber::operator!=(const BigNumber& other) const {
+    return value_ != other.value_;
+}
+
+bool BigNumber::operator<(const BigNumber& other) const {
+    return value_ < other.value_;
+}
+
+bool BigNumber::operator<=(const BigNumber& other) const {
+    return value_ <= other.value_;
+}
+
+bool BigNumber::operator>(const BigNumber& other) const {
+    return value_ > other.value_;
+}
+
+bool BigNumber::operator>=(const BigNumber& other) const {
+    return value_ >= other.value_;
+}
+
+// ============================================================================
 // CONVERSIONS
 // ============================================================================
 std::string BigNumber::ToString() const {
@@ -72,15 +100,97 @@ std::string BigNumber::ToString() const {
 }
 
 std::string BigNumber::ToScientific() const {
-    // TODO: Implement scientific notation (1.23e45)
-    // For now, just return ToString()
-    return ToString();
+    if (IsZero()) {
+        return "0";
+    }
+
+    // Get absolute value for calculation
+    BigNumber abs_val = Abs();
+    std::string str = abs_val.ToString();
+
+    // Calculate exponent (number of digits - 1)
+    int exponent = static_cast<int>(str.length()) - 1;
+
+    // Edge case: small numbers (< 1000)
+    if (exponent < 3) {
+        return ToString();
+    }
+
+    // Get mantissa: divide by 10^exponent to get value between 1 and 10
+    // For scientific notation: 1234567 -> 1.234567e6
+    std::string mantissa = str.substr(0, 1);
+    if (str.length() > 1) {
+        mantissa += ".";
+        // Show up to 3 decimal places
+        mantissa += str.substr(1, std::min(3, static_cast<int>(str.length()) - 1));
+    }
+
+    // Add sign if negative
+    std::string result = IsNegative() ? "-" : "";
+    result += mantissa + "e" + std::to_string(exponent);
+
+    return result;
 }
 
 std::string BigNumber::ToHumanReadable() const {
-    // TODO: Implement suffix formatting (1.23 Trillion, etc.)
-    // For now, return scientific
-    return ToScientific();
+    if (IsZero()) {
+        return "0";
+    }
+
+    // Get absolute value for calculation
+    BigNumber abs_val = Abs();
+    std::string str = abs_val.ToString();
+    int num_digits = static_cast<int>(str.length());
+
+    // Numbers less than 1,000: show as-is
+    if (num_digits < 4) {
+        return ToString();
+    }
+
+    // Determine suffix group (K, M, B, T, etc.)
+    // Exponent group: 3 digits = K (10^3), 6 digits = M (10^6), etc.
+    int exponent_group = (num_digits - 1) / 3;
+    const char* suffix = GetSuffixForExponent(exponent_group * 3);
+
+    // Calculate how many digits to show before decimal point
+    int leading_digits = num_digits - (exponent_group * 3);
+
+    // Build mantissa: show 3 significant figures total
+    std::string mantissa = str.substr(0, leading_digits);
+
+    // Add decimal places (up to 3 sig figs total)
+    int decimals_to_show = std::min(3 - leading_digits, 2);
+    if (decimals_to_show > 0 && leading_digits < static_cast<int>(str.length())) {
+        mantissa += ".";
+        mantissa += str.substr(leading_digits, decimals_to_show);
+    }
+
+    // Remove trailing zeros after decimal point
+    size_t decimal_pos = mantissa.find('.');
+    if (decimal_pos != std::string::npos) {
+        size_t last_nonzero = mantissa.find_last_not_of('0');
+        if (last_nonzero >= decimal_pos) {
+            mantissa = mantissa.substr(0, last_nonzero + 1);
+            // Remove decimal point if no decimals remain
+            if (mantissa.back() == '.') {
+                mantissa.pop_back();
+            }
+        }
+    }
+
+    // Add sign if negative
+    std::string result = IsNegative() ? "-" : "";
+    result += mantissa;
+
+    // Add suffix (unless it's "???")
+    if (std::string(suffix) != "???") {
+        result += suffix;
+    } else {
+        // Fall back to scientific for huge numbers
+        return ToScientific();
+    }
+
+    return result;
 }
 
 double BigNumber::ToDouble() const {
@@ -89,9 +199,14 @@ double BigNumber::ToDouble() const {
 }
 
 int64_t BigNumber::ToInt64() const {
-    if (!value_.fits<int64_t>()) {
+    // Check if value fits in int64_t range
+    mppp::integer<1> int64_max(std::numeric_limits<int64_t>::max());
+    mppp::integer<1> int64_min(std::numeric_limits<int64_t>::min());
+
+    if (value_ > int64_max || value_ < int64_min) {
         throw std::overflow_error("BigNumber too large for int64_t");
     }
+
     return static_cast<int64_t>(value_);
 }
 
