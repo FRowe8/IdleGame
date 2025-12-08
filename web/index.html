@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paradox Protocol - Time Travel Idle Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 1200px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 0.2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 2em;
+        }
+
+        #canvas {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            background: #1a1a2e;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            font-size: 0.9em;
+        }
+
+        .loading {
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .controls {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        button {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .error {
+            color: #ff6b6b;
+            background: rgba(255,0,0,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            text-align: left;
+        }
+
+        .info h2 {
+            margin-bottom: 10px;
+        }
+
+        .info ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        a {
+            color: #a8dadc;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏰ Paradox Protocol</h1>
+        <p class="subtitle">Time Travel Resource Arbitrage Idle Game</p>
+
+        <canvas id="canvas" width="1024" height="768"></canvas>
+
+        <div class="status" id="status">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading game...</p>
+            </div>
+        </div>
+
+        <div class="controls" style="display:none;" id="controls">
+            <button onclick="Module.requestFullscreen(false, true)">🖥️ Fullscreen</button>
+            <button onclick="location.reload()">🔄 Restart</button>
+        </div>
+
+        <div class="info">
+            <h2>🎮 About Paradox Protocol</h2>
+            <p><strong>Paradox Protocol</strong> is a unique idle game where you manipulate time itself to generate resources through temporal arbitrage.</p>
+
+            <h3 style="margin-top: 20px;">Core Mechanics:</h3>
+            <ul>
+                <li><strong>Causal Loops:</strong> Send resources back in time to create compound interest cycles</li>
+                <li><strong>Paradox Risk:</strong> Too many loops increase instability</li>
+                <li><strong>Time Bank:</strong> Store credits with exponential returns</li>
+                <li><strong>Offline Progress:</strong> Game simulates up to 24+ hours while you're away</li>
+            </ul>
+
+            <h3 style="margin-top: 20px;">Controls:</h3>
+            <ul>
+                <li><strong>Mouse:</strong> Click UI buttons and interact with timeline</li>
+                <li><strong>ESC:</strong> Pause/Menu (desktop only)</li>
+            </ul>
+
+            <p style="margin-top: 20px;">
+                <a href="https://github.com/FRowe8/IdleGame" target="_blank">📂 View Source Code on GitHub</a>
+            </p>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var statusElement = document.getElementById('status');
+        var controlsElement = document.getElementById('controls');
+        var canvas = document.getElementById('canvas');
+
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: (function() {
+                return function(text) {
+                    console.log('[stdout] ' + text);
+                };
+            })(),
+            printErr: function(text) {
+                console.error('[stderr] ' + text);
+            },
+            canvas: canvas,
+            setStatus: function(text) {
+                if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+                if (text === Module.setStatus.last.text) return;
+
+                var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+                var now = Date.now();
+
+                if (m && now - Module.setStatus.last.time < 30) return;
+                Module.setStatus.last.time = now;
+                Module.setStatus.last.text = text;
+
+                if (m) {
+                    text = m[1];
+                    var percent = Math.round(parseFloat(m[2]) / parseFloat(m[4]) * 100);
+                    statusElement.innerHTML = '<div class="loading"><div class="spinner"></div><p>' + text + ' (' + percent + '%)</p></div>';
+                } else if (text) {
+                    statusElement.innerHTML = '<p>' + text + '</p>';
+                } else {
+                    statusElement.innerHTML = '<p style="color: #51cf66;">✅ Game loaded! Enjoy!</p>';
+                    controlsElement.style.display = 'block';
+                }
+            },
+            totalDependencies: 0,
+            monitorRunDependencies: function(left) {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+            },
+            onRuntimeInitialized: function() {
+                console.log('Runtime initialized successfully');
+            }
+        };
+
+        Module.setStatus('Downloading...');
+
+        window.onerror = function(event) {
+            var errorMessage = event.toString();
+            console.error('Error:', errorMessage);
+            statusElement.innerHTML = '<div class="error"><strong>❌ Error loading game:</strong><br>' + errorMessage + '</div>';
+        };
+    </script>
+    <script async type="text/javascript" src="ParadoxProtocol.js"></script>
+</body>
+</html>

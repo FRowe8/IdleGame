@@ -281,6 +281,21 @@ target_link_libraries(ParadoxProtocol PRIVATE
     Platform
 )
 
+# Emscripten-specific configuration
+if(EMSCRIPTEN)
+    set_target_properties(ParadoxProtocol PROPERTIES
+        SUFFIX ".js"
+        LINK_FLAGS "-sUSE_SDL=2 -sUSE_FREETYPE=1 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4GB -sFULL_ES2=1 -sUSE_WEBGL2=1 --preload-file ${CMAKE_SOURCE_DIR}/data@/data -sEXPORTED_RUNTIME_METHODS=['ccall','cwrap'] -sEXPORTED_FUNCTIONS=['_main'] -sMODULARIZE=0"
+    )
+
+    # Copy HTML shell to build directory
+    configure_file(
+        ${CMAKE_SOURCE_DIR}/web/index.html
+        ${CMAKE_BINARY_DIR}/index.html
+        COPYONLY
+    )
+endif()
+
 # Copy data directory to build output
 add_custom_command(TARGET ParadoxProtocol POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
