@@ -131,27 +131,103 @@ message(STATUS "📦 Looking for GMP...")
 find_package(GMP CONFIG QUIET)
 
 if(NOT GMP_FOUND)
-    # Try system installation (using FindGMP.cmake or pkg-config)
+    # Try alternative package names that vcpkg might use
+    find_package(gmp CONFIG QUIET)
+endif()
+
+if(NOT GMP_FOUND)
+    # Try system installation (using pkg-config)
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
         pkg_check_modules(GMP QUIET gmp)
+        if(GMP_FOUND)
+            # Create imported target from pkg-config results
+            add_library(GMP::gmp INTERFACE IMPORTED)
+            set_target_properties(GMP::gmp PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES "${GMP_INCLUDE_DIRS}"
+                INTERFACE_LINK_LIBRARIES "${GMP_LIBRARIES}"
+            )
+        endif()
+    endif()
+endif()
+
+if(NOT GMP_FOUND AND WIN32)
+    # Last resort for Windows: look for GMP manually in common vcpkg locations
+    if(DEFINED ENV{VCPKG_ROOT})
+        set(VCPKG_INSTALLED "$ENV{VCPKG_ROOT}/installed")
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(VCPKG_TRIPLET "x64-windows")
+        else()
+            set(VCPKG_TRIPLET "x86-windows")
+        endif()
+
+        find_path(GMP_INCLUDE_DIR
+            NAMES gmp.h
+            PATHS "${VCPKG_INSTALLED}/${VCPKG_TRIPLET}/include"
+            NO_DEFAULT_PATH
+        )
+
+        find_library(GMP_LIBRARY
+            NAMES gmp
+            PATHS "${VCPKG_INSTALLED}/${VCPKG_TRIPLET}/lib"
+            NO_DEFAULT_PATH
+        )
+
+        if(GMP_INCLUDE_DIR AND GMP_LIBRARY)
+            message(STATUS "✅ Found GMP manually in vcpkg: ${GMP_LIBRARY}")
+            add_library(GMP::gmp UNKNOWN IMPORTED)
+            set_target_properties(GMP::gmp PROPERTIES
+                IMPORTED_LOCATION "${GMP_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${GMP_INCLUDE_DIR}"
+            )
+            set(GMP_FOUND TRUE)
+        endif()
     endif()
 endif()
 
 if(GMP_FOUND)
     message(STATUS "✅ GMP found")
+
+    # Ensure we have a GMP::gmp target
+    if(NOT TARGET GMP::gmp)
+        if(TARGET gmp)
+            add_library(GMP::gmp ALIAS gmp)
+        endif()
+    endif()
 else()
     message(STATUS "")
-    message(STATUS "⚠️  GMP (GNU Multiple Precision library) is required for mp++")
+    message(STATUS "❌ GMP (GNU Multiple Precision library) is required for mp++")
     message(STATUS "")
-    message(STATUS "To install GMP:")
-    message(STATUS "  vcpkg:         vcpkg install gmp (RECOMMENDED for CLion)")
-    message(STATUS "  Ubuntu/Debian: sudo apt-get install libgmp-dev")
-    message(STATUS "  macOS:         brew install gmp")
-    message(STATUS "  Fedora:        sudo dnf install gmp-devel")
-    message(STATUS "")
-    message(STATUS "If using vcpkg, make sure CMake is configured with:")
-    message(STATUS "  -DCMAKE_TOOLCHAIN_FILE=[vcpkg]/scripts/buildsystems/vcpkg.cmake")
+
+    if(WIN32)
+        message(STATUS "📋 Windows Installation Instructions:")
+        message(STATUS "")
+        message(STATUS "  1. Install vcpkg if you haven't already:")
+        message(STATUS "     git clone https://github.com/microsoft/vcpkg.git")
+        message(STATUS "     cd vcpkg && .\\bootstrap-vcpkg.bat")
+        message(STATUS "")
+        message(STATUS "  2. Install GMP:")
+        message(STATUS "     .\\vcpkg install gmp:x64-windows")
+        message(STATUS "")
+        message(STATUS "  3. Set VCPKG_ROOT environment variable:")
+        message(STATUS "     setx VCPKG_ROOT \"C:\\path\\to\\vcpkg\"")
+        message(STATUS "")
+        message(STATUS "  4. Reconfigure CMake with vcpkg toolchain:")
+        message(STATUS "     In Visual Studio: Set CMAKE_TOOLCHAIN_FILE in CMakeSettings.json")
+        message(STATUS "     Or via command line:")
+        message(STATUS "     cmake -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake ..")
+        message(STATUS "")
+    else()
+        message(STATUS "To install GMP:")
+        message(STATUS "  vcpkg:         vcpkg install gmp")
+        message(STATUS "  Ubuntu/Debian: sudo apt-get install libgmp-dev")
+        message(STATUS "  macOS:         brew install gmp")
+        message(STATUS "  Fedora:        sudo dnf install gmp-devel")
+        message(STATUS "")
+        message(STATUS "If using vcpkg, make sure CMake is configured with:")
+        message(STATUS "  -DCMAKE_TOOLCHAIN_FILE=[vcpkg]/scripts/buildsystems/vcpkg.cmake")
+    endif()
+
     message(STATUS "")
     message(FATAL_ERROR "GMP not found. Please install it and try again.")
 endif()
