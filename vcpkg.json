@@ -1,6 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "builtin-baseline": "ab2977be50c702126336e5088f4836060733c899",
+  "name": "paradox-protocol",
+  "version": "0.1.0",
+  "description": "Time Travel Resource Arbitrage Idle Game",
+  "homepage": "https://github.com/FRowe8/IdleGame",
+  "supports": "!uwp & !emscripten",
   "dependencies": [
     {
       "name": "sdl2",
@@ -23,12 +27,8 @@
     },
     {
       "name": "gmp",
-      "version>=": "6.3.0#3"
+      "version>=": "6.3.0"
     }
   ],
-  "description": "Time Travel Resource Arbitrage Idle Game",
-  "homepage": "https://github.com/YourUsername/IdleGame",
-  "name": "paradox-protocol",
-  "supports": "!uwp & !emscripten",
-  "version": "0.1.0"
+  "builtin-baseline": "ab2977be50c702126336e5088f4836060733c899"
 }
