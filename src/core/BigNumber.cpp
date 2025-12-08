@@ -2,44 +2,87 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <sstream>
+#include <iomanip>
 
 namespace paradox::core {
 
 // ============================================================================
 // CONSTRUCTORS
 // ============================================================================
+#ifdef PARADOX_USE_MPPP
 BigNumber::BigNumber() : value_(0) {}
-
 BigNumber::BigNumber(int64_t value) : value_(value) {}
-
 BigNumber::BigNumber(const std::string& str_value) : value_(str_value) {}
-
 BigNumber::BigNumber(const mppp::integer<1>& value) : value_(value) {}
+#else
+// Simplified implementation for WebAssembly
+BigNumber::BigNumber() : value_(0.0) {}
+BigNumber::BigNumber(int64_t value) : value_(static_cast<double>(value)) {}
+BigNumber::BigNumber(const std::string& str_value) {
+    try {
+        value_ = std::stod(str_value);
+    } catch (...) {
+        value_ = 0.0;
+    }
+}
+#endif
 
 // ============================================================================
 // ARITHMETIC OPERATORS
 // ============================================================================
 BigNumber BigNumber::operator+(const BigNumber& other) const {
+#ifdef PARADOX_USE_MPPP
     return BigNumber(value_ + other.value_);
+#else
+    BigNumber result;
+    result.value_ = value_ + other.value_;
+    return result;
+#endif
 }
 
 BigNumber BigNumber::operator-(const BigNumber& other) const {
+#ifdef PARADOX_USE_MPPP
     return BigNumber(value_ - other.value_);
+#else
+    BigNumber result;
+    result.value_ = value_ - other.value_;
+    return result;
+#endif
 }
 
 BigNumber BigNumber::operator*(const BigNumber& other) const {
+#ifdef PARADOX_USE_MPPP
     return BigNumber(value_ * other.value_);
+#else
+    BigNumber result;
+    result.value_ = value_ * other.value_;
+    return result;
+#endif
 }
 
 BigNumber BigNumber::operator/(const BigNumber& other) const {
     if (other.IsZero()) {
         throw std::runtime_error("Division by zero");
     }
+#ifdef PARADOX_USE_MPPP
     return BigNumber(value_ / other.value_);
+#else
+    BigNumber result;
+    result.value_ = value_ / other.value_;
+    return result;
+#endif
 }
 
 BigNumber BigNumber::operator%(const BigNumber& other) const {
+#ifdef PARADOX_USE_MPPP
     return BigNumber(value_ % other.value_);
+#else
+    // For double, use fmod
+    BigNumber result;
+    result.value_ = std::fmod(value_, other.value_);
+    return result;
+#endif
 }
 
 BigNumber& BigNumber::operator+=(const BigNumber& other) {
@@ -96,7 +139,14 @@ bool BigNumber::operator>=(const BigNumber& other) const {
 // CONVERSIONS
 // ============================================================================
 std::string BigNumber::ToString() const {
+#ifdef PARADOX_USE_MPPP
     return value_.to_string();
+#else
+    // For double, convert to string with full precision
+    std::ostringstream oss;
+    oss << std::setprecision(15) << value_;
+    return oss.str();
+#endif
 }
 
 std::string BigNumber::ToScientific() const {
@@ -104,6 +154,7 @@ std::string BigNumber::ToScientific() const {
         return "0";
     }
 
+#ifdef PARADOX_USE_MPPP
     // Get absolute value for calculation
     BigNumber abs_val = Abs();
     std::string str = abs_val.ToString();
@@ -130,6 +181,12 @@ std::string BigNumber::ToScientific() const {
     result += mantissa + "e" + std::to_string(exponent);
 
     return result;
+#else
+    // For double, use scientific notation directly
+    std::ostringstream oss;
+    oss << std::scientific << std::setprecision(3) << value_;
+    return oss.str();
+#endif
 }
 
 std::string BigNumber::ToHumanReadable() const {
@@ -137,6 +194,7 @@ std::string BigNumber::ToHumanReadable() const {
         return "0";
     }
 
+#ifdef PARADOX_USE_MPPP
     // Get absolute value for calculation
     BigNumber abs_val = Abs();
     std::string str = abs_val.ToString();
@@ -191,14 +249,52 @@ std::string BigNumber::ToHumanReadable() const {
     }
 
     return result;
+#else
+    // Simplified for double
+    double abs_val = std::abs(value_);
+
+    if (abs_val < 1000) {
+        return ToString();
+    }
+
+    // Determine suffix
+    int exponent = static_cast<int>(std::log10(abs_val));
+    int exponent_group = exponent / 3;
+    const char* suffix = GetSuffixForExponent(exponent_group * 3);
+
+    // Calculate mantissa
+    double divisor = std::pow(10.0, exponent_group * 3);
+    double mantissa = abs_val / divisor;
+
+    // Format
+    std::ostringstream oss;
+    if (IsNegative()) oss << "-";
+    oss << std::setprecision(3) << mantissa;
+
+    std::string result = oss.str();
+    // Remove trailing zeros
+    size_t decimal_pos = result.find('.');
+    if (decimal_pos != std::string::npos) {
+        result.erase(result.find_last_not_of('0') + 1);
+        if (result.back() == '.') result.pop_back();
+    }
+
+    result += suffix;
+    return result;
+#endif
 }
 
 double BigNumber::ToDouble() const {
     // Lossy conversion - only use for display!
+#ifdef PARADOX_USE_MPPP
     return static_cast<double>(value_);
+#else
+    return value_;
+#endif
 }
 
 int64_t BigNumber::ToInt64() const {
+#ifdef PARADOX_USE_MPPP
     // Check if value fits in int64_t range
     mppp::integer<1> int64_max(std::numeric_limits<int64_t>::max());
     mppp::integer<1> int64_min(std::numeric_limits<int64_t>::min());
@@ -208,6 +304,13 @@ int64_t BigNumber::ToInt64() const {
     }
 
     return static_cast<int64_t>(value_);
+#else
+    if (value_ > static_cast<double>(std::numeric_limits<int64_t>::max()) ||
+        value_ < static_cast<double>(std::numeric_limits<int64_t>::min())) {
+        throw std::overflow_error("BigNumber too large for int64_t");
+    }
+    return static_cast<int64_t>(value_);
+#endif
 }
 
 // ============================================================================
@@ -222,13 +325,25 @@ bool BigNumber::IsNegative() const {
 }
 
 BigNumber BigNumber::Abs() const {
+#ifdef PARADOX_USE_MPPP
     return BigNumber(mppp::abs(value_));
+#else
+    BigNumber result;
+    result.value_ = std::abs(value_);
+    return result;
+#endif
 }
 
 BigNumber BigNumber::Pow(int exponent) const {
+#ifdef PARADOX_USE_MPPP
     mppp::integer<1> result = 1;
     mppp::pow_ui(result, value_, static_cast<unsigned long>(exponent));
     return BigNumber(result);
+#else
+    BigNumber result;
+    result.value_ = std::pow(value_, static_cast<double>(exponent));
+    return result;
+#endif
 }
 
 const char* BigNumber::GetSuffixForExponent(int exponent) {
@@ -249,7 +364,7 @@ const char* BigNumber::GetSuffixForExponent(int exponent) {
     };
 
     int index = exponent / 3;
-    if (index < sizeof(suffixes) / sizeof(suffixes[0])) {
+    if (index < static_cast<int>(sizeof(suffixes) / sizeof(suffixes[0]))) {
         return suffixes[index];
     }
     return "???";  // Beyond supported range
