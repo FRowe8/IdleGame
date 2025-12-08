@@ -43,9 +43,14 @@ public:
     BigNumber& operator/=(const BigNumber& other);
 
     // ========================================================================
-    // COMPARISON OPERATORS (C++20 spaceship)
+    // COMPARISON OPERATORS
     // ========================================================================
-    auto operator<=>(const BigNumber& other) const = default;
+    bool operator==(const BigNumber& other) const;
+    bool operator!=(const BigNumber& other) const;
+    bool operator<(const BigNumber& other) const;
+    bool operator<=(const BigNumber& other) const;
+    bool operator>(const BigNumber& other) const;
+    bool operator>=(const BigNumber& other) const;
 
     // ========================================================================
     // CONVERSIONS
