@@ -1,9 +1,13 @@
 #pragma once
 
+#ifdef PARADOX_USE_MPPP
 #include <mp++/integer.hpp>
 #include <mp++/rational.hpp>
+#endif
+
 #include <string>
 #include <compare>
+#include <cstdint>
 
 namespace paradox::core {
 
@@ -11,7 +15,10 @@ namespace paradox::core {
  * @brief Arbitrary precision number wrapper for idle game scaling
  *
  * Idle games need to handle absurdly large numbers (e.g., 10^308+).
- * This wraps mp++ (multiprecision library) with game-friendly semantics.
+ *
+ * Implementation:
+ * - Desktop/Native: Uses mp++ (GMP backend) for true arbitrary precision
+ * - WebAssembly: Uses double for compatibility (limited to ~10^308)
  *
  * Design Constraints:
  * - MUST be serializable to JSON as string (see BigNumberConverter)
@@ -26,7 +33,10 @@ public:
     BigNumber();
     explicit BigNumber(int64_t value);
     explicit BigNumber(const std::string& str_value);  // For JSON deserialization
+
+#ifdef PARADOX_USE_MPPP
     explicit BigNumber(const mppp::integer<1>& value);
+#endif
 
     // ========================================================================
     // ARITHMETIC OPERATORS
@@ -73,11 +83,17 @@ public:
     // ========================================================================
     // SERIALIZATION SUPPORT
     // ========================================================================
+#ifdef PARADOX_USE_MPPP
     // Used by BigNumberConverter for JSON serialization
     [[nodiscard]] const mppp::integer<1>& GetRawValue() const { return value_; }
+#endif
 
 private:
+#ifdef PARADOX_USE_MPPP
     mppp::integer<1> value_;  // Dynamic-size integer (GMP backend)
+#else
+    double value_;  // Simplified implementation for WebAssembly (limited precision)
+#endif
 
     // Suffix table for human-readable formatting
     static const char* GetSuffixForExponent(int exponent);

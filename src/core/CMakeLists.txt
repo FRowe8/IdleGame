@@ -46,8 +46,16 @@ target_include_directories(Core PUBLIC
 
 target_link_libraries(Core PUBLIC
     nlohmann_json::nlohmann_json
-    mp++
 )
+
+# Link mp++ only for non-Emscripten builds
+if(NOT EMSCRIPTEN)
+    target_link_libraries(Core PUBLIC mp++)
+    target_compile_definitions(Core PUBLIC PARADOX_USE_MPPP)
+else()
+    # For Emscripten, use simplified BigNumber (no mp++)
+    target_compile_definitions(Core PUBLIC PARADOX_USE_SIMPLE_BIGNUM)
+endif()
 
 # Ensure C++20 features
 target_compile_features(Core PUBLIC cxx_std_20)
