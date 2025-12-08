@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Time Travel Resource Arbitrage Idle Game",
   "homepage": "https://github.com/FRowe8/IdleGame",
-  "supports": "!uwp & !emscripten",
+  "supports": "!uwp",
   "dependencies": [
     {
       "name": "sdl2",
