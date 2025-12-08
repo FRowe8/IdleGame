@@ -77,3 +77,4 @@ packages/
 # Emscripten cache
 .emscripten_cache/
 .emscripten_ports/
+/.vs/IdleGame/FileContentIndex/5411a5e6-e8e5-4a5f-a68f-f817ef57f493.vsidx

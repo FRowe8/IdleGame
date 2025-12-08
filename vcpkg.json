@@ -18,8 +18,7 @@
       "name": "rmlui",
       "version>=": "6.1",
       "features": [
-        "freetype",
-        "sdl2-binding"
+        "freetype"
       ]
     },
     {

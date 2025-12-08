@@ -188,7 +188,7 @@ endif()
 # ----------------------------------------------------------------------------
 message(STATUS "📦 Looking for RmlUi...")
 
-find_package(RmlUi CONFIG QUIET)
+find_package(RmlUi CONFIG REQUIRED)
 
 if(RmlUi_FOUND)
     message(STATUS "✅ RmlUi found via vcpkg")
