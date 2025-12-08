@@ -123,11 +123,45 @@ else()
 endif()
 
 # ----------------------------------------------------------------------------
+# GMP (GNU Multiple Precision Library - required for mp++)
+# ----------------------------------------------------------------------------
+message(STATUS "📦 Looking for GMP...")
+
+# Try vcpkg first (find_package with CONFIG mode)
+find_package(GMP CONFIG QUIET)
+
+if(NOT GMP_FOUND)
+    # Try system installation (using FindGMP.cmake or pkg-config)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(GMP QUIET gmp)
+    endif()
+endif()
+
+if(GMP_FOUND)
+    message(STATUS "✅ GMP found")
+else()
+    message(STATUS "")
+    message(STATUS "⚠️  GMP (GNU Multiple Precision library) is required for mp++")
+    message(STATUS "")
+    message(STATUS "To install GMP:")
+    message(STATUS "  vcpkg:         vcpkg install gmp (RECOMMENDED for CLion)")
+    message(STATUS "  Ubuntu/Debian: sudo apt-get install libgmp-dev")
+    message(STATUS "  macOS:         brew install gmp")
+    message(STATUS "  Fedora:        sudo dnf install gmp-devel")
+    message(STATUS "")
+    message(STATUS "If using vcpkg, make sure CMake is configured with:")
+    message(STATUS "  -DCMAKE_TOOLCHAIN_FILE=[vcpkg]/scripts/buildsystems/vcpkg.cmake")
+    message(STATUS "")
+    message(FATAL_ERROR "GMP not found. Please install it and try again.")
+endif()
+
+# ----------------------------------------------------------------------------
 # mp++ (Multiprecision arbitrary precision library for BigNumber)
 # ----------------------------------------------------------------------------
 message(STATUS "📦 Looking for mp++...")
 
-# Try to find mp++ (vcpkg package name might be 'mppp')
+# Try to find mp++ via vcpkg
 find_package(mp++ CONFIG QUIET)
 
 if(mp++_FOUND)
@@ -135,66 +169,7 @@ if(mp++_FOUND)
 else()
     message(STATUS "📥 mp++ not found, using FetchContent...")
 
-    # mp++ requires GMP - try to find it first
-    find_package(GMP QUIET)
-
-    if(NOT GMP_FOUND)
-        message(STATUS "📥 GMP not found, fetching via FetchContent...")
-
-        # Fetch mini-gmp (lightweight GMP alternative that's header-only friendly)
-        # OR install system GMP: sudo apt-get install libgmp-dev
-        FetchContent_Declare(
-            gmp
-            URL https://gmplib.org/download/gmp/gmp-6.3.0.tar.xz
-            URL_HASH SHA256=a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898
-        )
-
-        FetchContent_GetProperties(gmp)
-        if(NOT gmp_POPULATED)
-            message(STATUS "📥 Downloading and building GMP (this may take a few minutes)...")
-            FetchContent_Populate(gmp)
-
-            # Build GMP using its configure script
-            execute_process(
-                COMMAND ${gmp_SOURCE_DIR}/configure --prefix=${CMAKE_BINARY_DIR}/gmp-install --enable-cxx --disable-shared
-                WORKING_DIRECTORY ${gmp_BINARY_DIR}
-                RESULT_VARIABLE GMP_CONFIGURE_RESULT
-                OUTPUT_QUIET ERROR_QUIET
-            )
-
-            if(GMP_CONFIGURE_RESULT EQUAL 0)
-                execute_process(
-                    COMMAND make -j4
-                    WORKING_DIRECTORY ${gmp_BINARY_DIR}
-                    RESULT_VARIABLE GMP_BUILD_RESULT
-                    OUTPUT_QUIET ERROR_QUIET
-                )
-
-                if(GMP_BUILD_RESULT EQUAL 0)
-                    execute_process(
-                        COMMAND make install
-                        WORKING_DIRECTORY ${gmp_BINARY_DIR}
-                        OUTPUT_QUIET ERROR_QUIET
-                    )
-
-                    # Set GMP paths for mp++
-                    set(GMP_INCLUDE_DIR "${CMAKE_BINARY_DIR}/gmp-install/include" CACHE PATH "")
-                    set(GMP_LIBRARY "${CMAKE_BINARY_DIR}/gmp-install/lib/libgmp.a" CACHE FILEPATH "")
-                    set(GMPXX_LIBRARY "${CMAKE_BINARY_DIR}/gmp-install/lib/libgmpxx.a" CACHE FILEPATH "")
-
-                    message(STATUS "✅ GMP built successfully")
-                else()
-                    message(FATAL_ERROR "❌ GMP build failed. Please install manually: sudo apt-get install libgmp-dev")
-                endif()
-            else()
-                message(FATAL_ERROR "❌ GMP configure failed. Please install manually: sudo apt-get install libgmp-dev")
-            endif()
-        endif()
-    else()
-        message(STATUS "✅ GMP found")
-    endif()
-
-    # Now fetch mp++
+    # Fetch mp++ (GMP is already found above)
     FetchContent_Declare(
         mppp
         GIT_REPOSITORY https://github.com/bluescarni/mppp.git
