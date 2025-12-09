@@ -13,7 +13,7 @@ void from_json(const nlohmann::json& j, BigNumber& number) {
     } else if (j.is_number_integer()) {
         number = BigNumber(j.get<int64_t>());
     } else {
-        throw std::runtime_error("Cannot deserialize BigNumber from JSON type: " + j.type_name());
+        throw std::runtime_error(std::string("Cannot deserialize BigNumber from JSON type: ") + j.type_name());
     }
 }
 
