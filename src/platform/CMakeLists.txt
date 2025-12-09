@@ -11,13 +11,17 @@ add_library(Platform STATIC
     Input.h
     FileSystem.cpp
     FileSystem.h
-
-    # RmlUi Backend Integration
-    rmlui_backend/RmlUi_Platform_SDL.cpp
-    rmlui_backend/RmlUi_Platform_SDL.h
-    rmlui_backend/RmlUi_Renderer_GL2.cpp
-    rmlui_backend/RmlUi_Renderer_GL2.h
 )
+
+# RmlUi Backend Integration (Desktop only - Emscripten uses built-in SDL/WebGL)
+if(NOT EMSCRIPTEN)
+    target_sources(Platform PRIVATE
+        rmlui_backend/RmlUi_Platform_SDL.cpp
+        rmlui_backend/RmlUi_Platform_SDL.h
+        rmlui_backend/RmlUi_Renderer_GL2.cpp
+        rmlui_backend/RmlUi_Renderer_GL2.h
+    )
+endif()
 
 # Emscripten-specific code
 if(EMSCRIPTEN)
