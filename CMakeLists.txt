@@ -396,10 +396,12 @@ add_custom_command(TARGET ParadoxProtocol POST_BUILD
 )
 
 # ============================================================================
-# TESTING
+# TESTING (Desktop only - skip for WebAssembly)
 # ============================================================================
-enable_testing()
-add_subdirectory(tests)
+if(NOT EMSCRIPTEN)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 # ============================================================================
 # INSTALLATION
