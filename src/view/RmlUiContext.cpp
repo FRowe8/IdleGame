@@ -1,6 +1,4 @@
 #include "view/RmlUiContext.h"
-#include "RmlUi_Platform_SDL.h"
-#include "RmlUi_Renderer_GL2.h"
 #include <RmlUi/Core.h>
 
 namespace paradox::view {
