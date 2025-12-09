@@ -23,7 +23,7 @@ bool RmlUiContext::Initialize() {
 
 void RmlUiContext::Shutdown() {
     if (context_) {
-        context_->RemoveReference();
+        Rml::RemoveContext("main");
         context_ = nullptr;
     }
     Rml::Shutdown();
