@@ -54,7 +54,7 @@ jobs:
       - name: Build with Emscripten
         run: |
           cd build
-          emmake make -j$(nproc)
+          emmake make -j$(nproc) VERBOSE=1
 
       - name: Prepare deployment files
         run: |
