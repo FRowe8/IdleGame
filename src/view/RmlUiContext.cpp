@@ -7,6 +7,12 @@ bool RmlUiContext::Initialize() {
     // NOTE: Backends are initialized globally via RmlSDL::Initialize() and RmlGL2::Initialize()
     // This is called from main.cpp before this function
 
+#ifdef __EMSCRIPTEN__
+    // Create and set the system interface for WebAssembly
+    system_interface_ = std::make_unique<platform::RmlUiSystemInterface>();
+    Rml::SetSystemInterface(system_interface_.get());
+#endif
+
     Rml::Initialise();
 
     context_ = Rml::CreateContext("main", Rml::Vector2i(1280, 720));

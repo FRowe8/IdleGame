@@ -28,6 +28,8 @@ if(EMSCRIPTEN)
     target_sources(Platform PRIVATE
         emscripten/EmscriptenLoop.cpp
         emscripten/EmscriptenLoop.h
+        emscripten/RmlUiSystemInterface.cpp
+        emscripten/RmlUiSystemInterface.h
     )
 endif()
 

@@ -2,6 +2,11 @@
 
 #include <RmlUi/Core.h>
 #include <string>
+#include <memory>
+
+#ifdef __EMSCRIPTEN__
+#include "platform/emscripten/RmlUiSystemInterface.h"
+#endif
 
 namespace paradox::view {
 
@@ -26,6 +31,10 @@ public:
 
 private:
     Rml::Context* context_ = nullptr;
+
+#ifdef __EMSCRIPTEN__
+    std::unique_ptr<platform::RmlUiSystemInterface> system_interface_;
+#endif
 };
 
 } // namespace paradox::view
