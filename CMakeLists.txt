@@ -39,6 +39,9 @@ if(EMSCRIPTEN)
     message(STATUS "🌐 Building for WebAssembly (Emscripten)")
     set(PLATFORM_WEB TRUE)
 
+    # Emscripten requires static libraries only
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+
     # Emscripten-specific flags
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     add_compile_options(
