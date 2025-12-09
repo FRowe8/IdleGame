@@ -7,8 +7,10 @@
 
 #include "platform/Window.h"
 #include "platform/Input.h"
+#ifndef __EMSCRIPTEN__
 #include "platform/rmlui_backend/RmlUi_Platform_SDL.h"
 #include "platform/rmlui_backend/RmlUi_Renderer_GL2.h"
+#endif
 #include "view/RmlUiContext.h"
 #include "view/DataModelBinder.h"
 #include "core/TickSystem.h"
@@ -47,8 +49,10 @@ struct GameContext {
 
 static GameContext* g_game_context = nullptr;
 
-// Forward declaration
+#ifndef __EMSCRIPTEN__
+// Forward declaration (desktop only)
 extern RenderInterface_GL2* g_render_interface_gl2;
+#endif
 
 // ============================================================================
 // INITIALIZATION
@@ -75,8 +79,9 @@ bool Initialize() {
     }
     std::cout << "✅ SDL2 window + OpenGL context created\n";
 
+#ifndef __EMSCRIPTEN__
     // ========================================================================
-    // RmlUi Backends
+    // RmlUi Backends (Desktop only - Emscripten has built-in SDL/WebGL)
     // ========================================================================
     std::cout << "[RmlUi] Initializing backends...\n";
 
@@ -100,6 +105,9 @@ bool Initialize() {
     }
 
     std::cout << "✅ RmlUi backends initialized\n";
+#else
+    std::cout << "🌐 Using Emscripten built-in SDL/WebGL (no custom backends needed)\n";
+#endif
 
     // ========================================================================
     // LAYER 3: View (RmlUi Context)
@@ -212,14 +220,18 @@ void MainLoopIteration() {
     g_game_context->window.Clear();
 
     // RmlUi render
+#ifndef __EMSCRIPTEN__
     if (g_render_interface_gl2) {
         g_render_interface_gl2->BeginFrame();
     }
+#endif
     g_game_context->rmlui.Update();
     g_game_context->rmlui.Render();
+#ifndef __EMSCRIPTEN__
     if (g_render_interface_gl2) {
         g_render_interface_gl2->EndFrame();
     }
+#endif
 
     g_game_context->window.Present();
 }
@@ -236,8 +248,10 @@ void Shutdown() {
 
     g_game_context->rmlui.Shutdown();
 
+#ifndef __EMSCRIPTEN__
     RmlGL2::Shutdown();
     RmlSDL::Shutdown();
+#endif
 
     g_game_context->window.Shutdown();
 
