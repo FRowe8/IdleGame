@@ -36,7 +36,7 @@ public:
      */
     template<typename T>
     uint32_t Subscribe(std::function<void(const T&)> callback) {
-        auto type = T(T::Type{}).GetType();  // Hack to get Type enum
+        auto type = T{}.GetType();  // Get event type from default-constructed instance
         uint32_t id = next_id_++;
 
         listeners_[type].emplace_back(id, [callback](const core::Event& e) {
